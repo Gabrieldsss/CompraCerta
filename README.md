@@ -20,7 +20,15 @@ Recomendado: em **Authentication → Attack Protection**, ative um CAPTCHA para 
 
 ## 2. Gerar o APK
 
-Requisitos: Node.js 22 ou mais novo e **Android Studio** (<https://developer.android.com/studio>). Instale o Android Studio com as opções padrão e abra-o uma vez para concluir o assistente ("Standard"), que baixa o Android SDK.
+Requisitos: Node.js 22 ou mais novo, Java 21 e Android SDK. Há duas formas de ter os dois últimos:
+
+- **Android Studio** (<https://developer.android.com/studio>): instale com as opções padrão e abra-o uma vez para concluir o assistente ("Standard").
+- **Só as ferramentas de linha de comando** (como neste computador), sem o editor:
+  - JDK 21 da Microsoft, descompactado em `%LOCALAPPDATA%\Programs\jdk-21`;
+  - Android SDK Command-line Tools, em `%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest`;
+  - os pacotes `platform-tools`, `platforms;android-36` e `build-tools;35.0.0`, instalados com o `sdkmanager`.
+
+O `npm run apk` encontra sozinho qualquer uma das duas instalações.
 
 ```bash
 npm install
@@ -30,6 +38,8 @@ npm run apk
 O APK sai em `dist/CompraCerta-<versão>-debug.apk`. Na primeira vez, o Gradle baixa cerca de 1 GB e leva alguns minutos.
 
 **Instalar no celular:** copie o APK para o aparelho (cabo USB, Google Drive, WhatsApp etc.), toque nele e permita "instalar apps desconhecidos" para o app usado na abertura. Para atualizar, instale a versão nova por cima: os dados são mantidos.
+
+**Nova versão:** aumente `version` no `package.json` (ex.: `3.1.0` → `3.1.1`) antes do `npm run apk`. O número interno do Android (`versionCode`) é calculado a partir dela, e o celular só aceita atualizar para um número maior.
 
 > É um APK de **depuração**, assinado com uma chave de teste. Ele serve para instalar nos seus aparelhos e nos da família. Para publicar na Google Play, é preciso gerar um pacote **assinado** (AAB) com uma chave própria. Guarde essa chave com segurança e fora do projeto.
 

@@ -15,10 +15,16 @@ function falhar(msg) {
 }
 
 function rodar(comando, args, opcoes) {
-  console.log('\n> ' + comando + ' ' + args.join(' '));
-  const r = spawnSync(comando, args, Object.assign({ stdio: 'inherit', shell: process.platform === 'win32' }, opcoes));
+  const linha = [comando].concat(args).join(' '); // argumentos sem espaços (controlados por este script)
+  console.log('\n> ' + linha);
+  const r = spawnSync(linha, Object.assign({ stdio: 'inherit', shell: true }, opcoes));
   if (r.status !== 0) falhar('o comando acima terminou com erro (código ' + r.status + ').');
 }
+
+// Versão do APK = versão do package.json. O Android só instala por cima um versionCode maior:
+// 3.1.0 -> 30100, 3.1.1 -> 30101, 3.2.0 -> 30200...
+const [maior, menor, correcao] = versao.split('.').map(Number);
+const versionCode = maior * 10000 + menor * 100 + correcao;
 
 const primeiroQueExiste = lista => lista.filter(Boolean).find(p => fs.existsSync(p));
 
@@ -29,6 +35,8 @@ const javaHome = primeiroQueExiste([
   path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Android Studio', 'jbr'),
   '/Applications/Android Studio.app/Contents/jbr/Contents/Home',
   '/opt/android-studio/jbr',
+  // JDK 21 avulso (Microsoft Build of OpenJDK) instalado na pasta do usuário, sem Android Studio.
+  path.join(process.env.LOCALAPPDATA || '', 'Programs', 'jdk-21'),
   process.env.JAVA_HOME
 ].filter(p => p && fs.existsSync(path.join(p, 'bin'))));
 if (!javaHome) falhar('Java não encontrado. Instale o Android Studio (https://developer.android.com/studio) e abra-o uma vez para concluir a instalação.');
@@ -55,7 +63,9 @@ const env = Object.assign({}, process.env, {
 
 rodar('node', [path.join('scripts', 'build.js')], { cwd: raiz, env });
 rodar('npx', ['cap', 'sync', 'android'], { cwd: raiz, env });
-rodar(process.platform === 'win32' ? 'gradlew.bat' : './gradlew', ['assembleDebug', '--console=plain'], { cwd: android, env });
+// Caminho explícito (.\): funciona mesmo com NoDefaultCurrentDirectoryInExePath ligado no Windows.
+rodar(process.platform === 'win32' ? '.\\gradlew.bat' : './gradlew',
+  ['assembleDebug', '--console=plain', '-PversionCode=' + versionCode, '-PversionName=' + versao], { cwd: android, env });
 
 const gerado = path.join(android, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
 if (!fs.existsSync(gerado)) falhar('o Gradle terminou, mas o APK não foi encontrado em ' + gerado);
