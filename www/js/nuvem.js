@@ -139,7 +139,7 @@
         de enviar qualquer coisa, para nunca apagar a cópia da nuvem com um estado vazio. */
     async function talvezRestaurar(userId, meta) {
       if (!estaVazio(o.obterEstado())) return false;
-      const produtos = await buscarTodas(() => cli.from('produtos').select('*').eq('user_id', userId).order('id'));
+      const produtos = await buscarTodas(() => cli.from('produtos').select('*').eq('user_id', userId).order('criado_em').order('id'));
       const compras = await buscarTodas(() => cli.from('compras').select('*, compra_itens(*)').eq('user_id', userId).order('finalizada_em'));
       const lista = verificar(await cli.from('listas_atuais').select('*').eq('user_id', userId).maybeSingle());
       const listaTemItens = !!(lista && lista.lista && Array.isArray(lista.lista.itens) && lista.lista.itens.length);
