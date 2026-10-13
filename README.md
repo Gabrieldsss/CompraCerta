@@ -13,6 +13,17 @@ Versão 3.1.0 · 4,1 MB · Android 7 ou mais novo
 
 Para atualizar, baixe e instale a versão nova por cima: seus dados continuam no aparelho.
 
+## 📱 iPhone (e qualquer celular): [gabrieldsss.github.io/CompraCerta](https://gabrieldsss.github.io/CompraCerta/)
+
+No iPhone, o CompraCerta é instalado pelo Safari, sem App Store:
+
+1. Abra **<https://gabrieldsss.github.io/CompraCerta/>** no **Safari**. Precisa ser o Safari, não o Chrome nem outro navegador.
+2. Toque no botão **Compartilhar** (o quadrado com a seta para cima).
+3. Role a lista e toque em **Adicionar à Tela de Início**, depois em **Adicionar**.
+4. Use sempre pelo ícone **CompraCerta** da tela inicial. Ele abre em tela cheia e funciona sem internet.
+
+> Os dados do app da tela inicial ficam separados dos do Safari. Por isso, instale primeiro e depois use só pelo ícone. As atualizações chegam sozinhas: basta abrir o app com internet.
+
 ---
 
 Lista de compras de supermercado para Android. A pessoa monta a lista, registra o preço real de cada produto no mercado, marca o que já pegou e finaliza a compra. A partir da segunda compra, o app mostra estimativas com base no preço pago na compra concluída mais recente.
