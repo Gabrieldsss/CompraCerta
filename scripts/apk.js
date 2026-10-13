@@ -73,3 +73,9 @@ fs.mkdirSync(path.join(raiz, 'dist'), { recursive: true });
 const destino = path.join(raiz, 'dist', 'CompraCerta-' + versao + '-debug.apk');
 fs.copyFileSync(gerado, destino);
 console.log('\nAPK pronto: ' + destino + ' (' + (fs.statSync(destino).size / 1048576).toFixed(1) + ' MB)');
+
+// Cópia com nome fixo, versionada no repositório: é o link de download do README.
+const publico = path.join(raiz, 'download', 'CompraCerta.apk');
+fs.mkdirSync(path.dirname(publico), { recursive: true });
+fs.copyFileSync(gerado, publico);
+console.log('Para o GitHub: download/CompraCerta.apk (faça commit e push para publicar)');

@@ -1,5 +1,20 @@
 # CompraCerta
 
+## 📲 [Baixar o CompraCerta para Android (APK)](https://github.com/Gabrieldsss/CompraCerta/raw/main/download/CompraCerta.apk)
+
+Versão 3.1.0 · 4,1 MB · Android 7 ou mais novo
+
+**Como instalar:**
+
+1. No celular, toque no link acima. O arquivo `CompraCerta.apk` é baixado.
+2. Abra o arquivo baixado: pela notificação do download ou pelo app **Arquivos → Downloads**.
+3. Se o Android pedir, toque em **Configurações** e permita **"instalar apps desta fonte"**. Depois volte e toque em **Instalar**.
+4. Se o Google Play Protect avisar que o app é de desenvolvedor desconhecido, toque em **Mais detalhes → Instalar mesmo assim**. O aviso aparece porque o app não vem da Play Store.
+
+Para atualizar, baixe e instale a versão nova por cima: seus dados continuam no aparelho.
+
+---
+
 Lista de compras de supermercado para Android. A pessoa monta a lista, registra o preço real de cada produto no mercado, marca o que já pegou e finaliza a compra. A partir da segunda compra, o app mostra estimativas com base no preço pago na compra concluída mais recente.
 
 - **Funciona sem internet:** tudo é salvo primeiro no aparelho.
@@ -35,7 +50,7 @@ npm install
 npm run apk
 ```
 
-O APK sai em `dist/CompraCerta-<versão>-debug.apk`. Na primeira vez, o Gradle baixa cerca de 1 GB e leva alguns minutos.
+O APK sai em `dist/CompraCerta-<versão>-debug.apk`, com uma cópia em `download/CompraCerta.apk`. Essa cópia é a que vai para o GitHub e é usada pelo link de download do topo: para publicar uma versão nova, basta fazer commit e push dela. Na primeira vez, o Gradle baixa cerca de 1 GB e leva alguns minutos.
 
 **Instalar no celular:** copie o APK para o aparelho (cabo USB, Google Drive, WhatsApp etc.), toque nele e permita "instalar apps desconhecidos" para o app usado na abertura. Para atualizar, instale a versão nova por cima: os dados são mantidos.
 
