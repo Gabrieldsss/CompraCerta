@@ -1,0 +1,9 @@
+# Quebras de linha padronizadas (LF) para o projeto funcionar igual em Windows, Linux e macOS.
+* text=auto eol=lf
+# Scripts do Windows precisam de CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+# Arquivos binários: nunca converter.
+*.png binary
+*.jar binary
+*.apk binary

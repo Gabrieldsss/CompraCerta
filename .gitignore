@@ -1,0 +1,12 @@
+node_modules/
+dist/
+www/vendor/
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/public/
+*.keystore
+*.jks
+.claude/settings.local.json
+www/js/config.js

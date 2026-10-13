@@ -1,0 +1,21 @@
+{
+  "name": "compracerta",
+  "version": "3.1.0",
+  "private": true,
+  "description": "Lista de compras de supermercado com preços reais, histórico, estimativas e cópia na nuvem (Supabase).",
+  "scripts": {
+    "start": "node scripts/build.js && node servidor.js",
+    "build": "node scripts/build.js",
+    "test": "node --test tests/core.test.js tests/nuvem.test.js",
+    "apk": "node scripts/apk.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@supabase/supabase-js": "2.117.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

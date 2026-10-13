@@ -1,0 +1,16 @@
+{
+  "appId": "com.compracerta.app",
+  "appName": "CompraCerta",
+  "webDir": "www",
+  "backgroundColor": "#176b4d",
+  "android": {
+    "backgroundColor": "#176b4d"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
+}
