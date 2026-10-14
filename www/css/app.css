@@ -130,6 +130,32 @@ body.sem-barra main { padding-bottom: calc(var(--nav-h) + 24px + var(--seguro-ba
 .passo .campo:focus { box-shadow: none; }
 #campoCategoria { flex: 1; min-width: 0; }
 
+/* Leitura de nota fiscal */
+.botao-nota { margin: 0 0 6px; }
+.dicas { margin: 8px 0; padding-left: 20px; font-size: 14px; color: var(--suave); }
+.dicas li { margin: 4px 0; }
+.progresso-ocr { height: 8px; background: var(--linha); border-radius: 999px; overflow: hidden; margin: 12px 0; }
+#ocrBarra { height: 100%; width: 0; background: var(--verde2); border-radius: 999px; transition: width .3s; }
+.nota-itens { margin: 10px 0; }
+.nota-item {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; align-items: start;
+  padding: 10px 0; border-top: 1px solid var(--linha);
+}
+.nota-item.conferir { background: var(--alerta-fundo); border-radius: 12px; padding: 10px 8px 10px 0; }
+.nota-item .marcar { margin-top: 2px; }
+.nota-campos { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nota-valores { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.nota-qtd { width: 76px; text-align: center; }
+.nota-valores .campo-preco { width: 120px; }
+.nota-campos .sub { margin: 0; }
+.nota-campos .erro { margin: 0; }
+.texto-ocr { margin: 10px 0; font-size: 13px; }
+.texto-ocr summary { color: var(--texto-verde); cursor: pointer; min-height: 36px; display: flex; align-items: center; }
+.texto-ocr pre {
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; margin: 6px 0 0;
+  padding: 8px; background: var(--campo); border: 1px solid var(--linha); border-radius: 10px; font-size: 12px;
+}
+
 /* Filtros */
 .filtros { display: flex; gap: 8px; overflow-x: auto; padding: 6px 0 8px; scrollbar-width: none; }
 .chip {

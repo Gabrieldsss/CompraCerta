@@ -2,7 +2,7 @@
 
 ## 📲 [Baixar o CompraCerta para Android (APK)](https://github.com/Gabrieldsss/CompraCerta/raw/main/download/CompraCerta.apk)
 
-Versão 3.1.0 · 4,1 MB · Android 7 ou mais novo
+Versão 3.2.0 · 8,8 MB · Android 7 ou mais novo
 
 **Como instalar:**
 
@@ -29,6 +29,11 @@ No iPhone, o CompraCerta é instalado pelo Safari, sem App Store:
 Lista de compras de supermercado para Android. A pessoa monta a lista, registra o preço real de cada produto no mercado, marca o que já pegou e finaliza a compra. A partir da segunda compra, o app mostra estimativas com base no preço pago na compra concluída mais recente.
 
 - **Funciona sem internet:** tudo é salvo primeiro no aparelho.
+- **Ler nota fiscal:** em **Lista → 📷 Ler nota fiscal**, tire uma foto do cupom.
+  - O app lê os itens com **OCR no próprio aparelho** (Tesseract): grátis, e a foto não sai do celular.
+  - Ele preenche a lista atual com quantidade e preço reais e sugere a qual item da sua lista cada linha corresponde.
+  - Antes de incluir, você confere tudo, porque a leitura automática pode errar em papel térmico.
+  - Funciona com notas de qualquer estado, porque não depende do site da SEFAZ.
 - **Cópia na nuvem (Supabase):** quando há conexão, as alterações são enviadas automaticamente. Sem login: cada aparelho é um usuário anônimo.
 - **APK para Android 7 ou mais novo**, gerado com o Capacitor. A mesma pasta `www/` também funciona como site/PWA.
 

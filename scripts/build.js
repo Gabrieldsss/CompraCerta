@@ -5,7 +5,12 @@ const path = require('path');
 
 const raiz = path.join(__dirname, '..');
 const copias = [
-  ['node_modules/@supabase/supabase-js/dist/umd/supabase.js', 'www/vendor/supabase.js']
+  ['node_modules/@supabase/supabase-js/dist/umd/supabase.js', 'www/vendor/supabase.js'],
+  // Leitura de nota fiscal (OCR no aparelho): Tesseract.js, só as variantes LSTM usadas pelo app.
+  ['node_modules/tesseract.js/dist/tesseract.min.js', 'www/vendor/tesseract/tesseract.min.js'],
+  ['node_modules/tesseract.js/dist/worker.min.js', 'www/vendor/tesseract/worker.min.js'],
+  ['node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js', 'www/vendor/tesseract/tesseract-core-simd-lstm.wasm.js'],
+  ['node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js', 'www/vendor/tesseract/tesseract-core-lstm.wasm.js']
 ];
 
 for (const [origem, destino] of copias) {
@@ -19,6 +24,20 @@ for (const [origem, destino] of copias) {
   fs.copyFileSync(de, para);
   console.log('copiado: ' + destino);
 }
+
+// Idioma português do OCR, já descompactado: o build do Android remove a extensão ".gz" dos
+// arquivos (e descompacta), então o app usa o arquivo puro em todas as plataformas.
+const zlib = require('zlib');
+const idiomaGz = path.join(raiz, 'node_modules/@tesseract.js-data/por/4.0.0_best_int/por.traineddata.gz');
+const idioma = path.join(raiz, 'www/vendor/tesseract/lang/por.traineddata');
+if (!fs.existsSync(idiomaGz)) {
+  console.error('Arquivo não encontrado: ' + path.relative(raiz, idiomaGz) + '. Rode "npm install" primeiro.');
+  process.exit(1);
+}
+fs.mkdirSync(path.dirname(idioma), { recursive: true });
+fs.writeFileSync(idioma, zlib.gunzipSync(fs.readFileSync(idiomaGz)));
+fs.rmSync(idioma + '.gz', { force: true }); // versão compactada de builds anteriores
+console.log('descompactado: www/vendor/tesseract/lang/por.traineddata');
 
 // www/js/config.js não vai para o Git (repositório público).
 // Na publicação automática (GitHub Actions), vem dos segredos SUPABASE_URL e SUPABASE_CHAVE;

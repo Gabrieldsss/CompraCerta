@@ -59,6 +59,10 @@
         <button class="btn primario largo" type="submit">+ Adicionar à lista</button>
       </form>
 
+      <button class="btn secundario largo botao-nota" id="btnLerNota" type="button">📷 Ler nota fiscal e preencher a lista</button>
+      <input type="file" id="fotoNotaCamera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="fotoNotaGaleria" accept="image/*" hidden>
+
       <div class="filtros" id="filtros" role="group" aria-label="Filtrar itens">
         <button class="chip ativo" type="button" data-filtro="todos" aria-pressed="true">Todos</button>
         <button class="chip" type="button" data-filtro="faltam" aria-pressed="false">Faltam pegar</button>
@@ -158,6 +162,7 @@
 <script src="vendor/supabase.js"></script>
 <script src="js/config.js"></script>
 <script src="js/core.js"></script>
+<script src="js/nota.js"></script>
 <script src="js/nuvem.js"></script>
 <script src="js/app.js"></script>
 </body>

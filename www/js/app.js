@@ -98,6 +98,11 @@
   /** Abre a folha inferior e resolve com o `value` do botão tocado ('' se fechada sem escolha).
       opcoes.validar(valor, form) pode retornar false para manter a folha aberta. */
   let folhaAberta = false;
+  let concluirFolhaAtual = null;
+
+  /** Fecha a folha aberta na hora (sem esperar o evento "close"), resolvendo com ''. */
+  function fecharFolha() { if (concluirFolhaAtual) concluirFolhaAtual(''); }
+
   function abrirFolha(html, opcoes) {
     opcoes = opcoes || {};
     const dlg = $('folha');
@@ -109,6 +114,7 @@
       const concluir = valor => {
         if (!folhaAberta) return;
         folhaAberta = false;
+        concluirFolhaAtual = null;
         form.removeEventListener('click', aoClicar);
         form.removeEventListener('submit', aoEnviar);
         dlg.removeEventListener('close', aoFechar);
@@ -130,6 +136,7 @@
       // Fechada por Esc, botão "voltar" do Android ou toque fora. O evento "close" chega
       // de forma assíncrona; se a folha já foi reaberta, ele é de uma folha anterior e é ignorado.
       const aoFechar = () => { if (!dlg.open) concluir(''); };
+      concluirFolhaAtual = concluir;
       form.addEventListener('click', aoClicar);
       form.addEventListener('submit', aoEnviar);
       dlg.addEventListener('close', aoFechar);
@@ -918,6 +925,246 @@
     mostrarTela();
     toast('Dados importados.');
   });
+
+  /* ---------- Leitura de nota fiscal (foto + OCR no próprio aparelho) ---------- */
+
+  // Mesmo teste de suporte a SIMD do Tesseract: escolhe a variante rápida do motor quando possível.
+  const SIMD = (() => {
+    try { return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); }
+    catch (_) { return false; }
+  })();
+  const ETAPAS_OCR = {
+    'loading tesseract core': 'Preparando o leitor…',
+    'initializing tesseract': 'Preparando o leitor…',
+    'loading language traineddata': 'Carregando o idioma português…',
+    'initializing api': 'Preparando o leitor…',
+    'recognizing text': 'Lendo o texto da nota…'
+  };
+  let leitorOcr = null;
+  let aoProgressoOcr = null;
+
+  function carregarScript(src) {
+    return new Promise((ok, falha) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = ok;
+      s.onerror = () => falha(new Error('Não foi possível carregar o leitor de notas. Verifique a internet e tente de novo.'));
+      document.head.appendChild(s);
+    });
+  }
+
+  /** Cria o leitor (OCR) uma vez e reaproveita. Os arquivos ficam em vendor/tesseract (nada de CDN). */
+  async function obterLeitorOcr() {
+    if (leitorOcr) return leitorOcr;
+    if (!window.Tesseract) await carregarScript('vendor/tesseract/tesseract.min.js');
+    const base = new URL('vendor/tesseract/', location.href).href;
+    const leitor = await window.Tesseract.createWorker('por', 1, {
+      workerPath: base + 'worker.min.js',
+      corePath: base + (SIMD ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js'),
+      langPath: base + 'lang',
+      gzip: false, // arquivo do idioma já descompactado (ver scripts/build.js)
+      logger: m => { if (aoProgressoOcr) aoProgressoOcr(m); }
+    });
+    // "Coluna única" (PSM 4) foi o modo que melhor leu cupons nos testes.
+    await leitor.setParameters({ tessedit_pageseg_mode: '4', preserve_interword_spaces: '1' });
+    leitorOcr = leitor;
+    return leitor;
+  }
+
+  function carregarImagem(arquivo) {
+    return new Promise((ok, falha) => {
+      const url = URL.createObjectURL(arquivo);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); ok(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); falha(new Error('Não foi possível abrir a foto.')); };
+      img.src = url;
+    });
+  }
+
+  /** Tons de cinza, contraste esticado (papel térmico desbotado) e tamanho bom para o OCR. */
+  async function prepararFoto(arquivo) {
+    const img = await carregarImagem(arquivo);
+    const maior = Math.max(img.naturalWidth, img.naturalHeight);
+    const escala = maior > 2400 ? 2400 / maior : maior < 1200 ? 1600 / maior : 1;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.naturalWidth * escala);
+    canvas.height = Math.round(img.naturalHeight * escala);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const dados = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const p = dados.data;
+    const histograma = new Uint32Array(256);
+    for (let i = 0; i < p.length; i += 4) {
+      const cinza = ((p[i] * 299 + p[i + 1] * 587 + p[i + 2] * 114) / 1000) | 0;
+      p[i] = cinza;
+      histograma[cinza]++;
+    }
+    const corte = (p.length / 4) * 0.02;
+    let soma = 0, escuro = 0, claro = 255;
+    for (let v = 0; v < 256; v++) { soma += histograma[v]; if (soma >= corte) { escuro = v; break; } }
+    soma = 0;
+    for (let v = 255; v >= 0; v--) { soma += histograma[v]; if (soma >= corte) { claro = v; break; } }
+    const faixa = Math.max(1, claro - escuro);
+    for (let i = 0; i < p.length; i += 4) {
+      const v = Math.max(0, Math.min(255, ((p[i] - escuro) * 255) / faixa));
+      p[i] = p[i + 1] = p[i + 2] = v;
+    }
+    ctx.putImageData(dados, 0, 0);
+    return canvas;
+  }
+
+  async function lerFotoDaNota(arquivo) {
+    let cancelado = false, terminou = false;
+    abrirFolha(
+      '<h2 id="folhaTitulo">Lendo a nota fiscal</h2>' +
+      '<p class="sub" id="ocrEtapa">Preparando a foto…</p>' +
+      '<div class="progresso-ocr" aria-hidden="true"><div id="ocrBarra"></div></div>' +
+      '<p class="sub">A leitura acontece no próprio aparelho: a foto não é enviada para lugar nenhum. ' +
+      'Na primeira vez, o leitor é carregado e pode demorar um pouco mais.</p>' +
+      '<div class="botoes"><button class="btn texto" value="cancelar">Cancelar</button></div>'
+    ).then(() => {
+      if (terminou) return;
+      cancelado = true;
+      if (leitorOcr) { leitorOcr.terminate(); leitorOcr = null; } // interrompe a leitura em andamento
+    });
+    aoProgressoOcr = m => {
+      const etapa = $('ocrEtapa'), barra = $('ocrBarra');
+      if (!etapa || !barra) return;
+      etapa.textContent = ETAPAS_OCR[m.status] || 'Preparando o leitor…';
+      const fracao = m.status === 'recognizing text' ? 0.3 + 0.7 * (m.progress || 0) : 0.3 * (m.progress || 0);
+      barra.style.width = Math.round(fracao * 100) + '%';
+    };
+    let resultado;
+    try {
+      const imagem = await prepararFoto(arquivo);
+      if (cancelado) return;
+      const leitor = await obterLeitorOcr();
+      if (cancelado) return;
+      const { data } = await leitor.recognize(imagem);
+      resultado = window.CCNota.lerItensDaNota(data.text);
+      resultado.texto = data.text;
+    } catch (e) {
+      if (!cancelado) {
+        terminou = true;
+        fecharFolha();
+        toast((e && e.message) || 'Não foi possível ler a nota.');
+      }
+      return;
+    } finally {
+      aoProgressoOcr = null;
+    }
+    if (cancelado) return;
+    terminou = true;
+    fecharFolha();
+    revisarNota(resultado);
+  }
+
+  function htmlTextoLido(texto) {
+    return '<details class="texto-ocr"><summary>Ver o texto que foi lido da foto</summary><pre>' + esc(texto || '(vazio)') + '</pre></details>';
+  }
+
+  function htmlItemDaNota(it, i, sugestao, itensLista) {
+    const opcoes = '<option value="">➕ Adicionar como item novo</option>' + itensLista.map(l =>
+      '<option value="' + esc(l.id) + '"' + (sugestao === l.id ? ' selected' : '') + '>→ Preencher "' + esc(l.nomeProdutoSnapshot) + '" da lista</option>').join('');
+    return '<div class="nota-item' + (it.conferir ? ' conferir' : '') + '" data-i="' + i + '">' +
+      '<label class="marcar"><input type="checkbox" data-campo="incluir" checked aria-label="Incluir ' + esc(it.nome) + '"><span class="caixa"></span></label>' +
+      '<div class="nota-campos">' +
+        '<input class="campo" data-campo="nome" maxlength="80" value="' + esc(it.nome) + '" aria-label="Nome do produto">' +
+        '<div class="nota-valores">' +
+          '<input class="campo nota-qtd" data-campo="quantidade" inputmode="decimal" value="' + qtdCampo(it.quantidade) + '" aria-label="Quantidade">' +
+          '<span class="sub">' + esc(it.unidade || 'un') + ' ×</span>' +
+          '<label class="campo-preco"><span>R$</span><input data-campo="preco" inputmode="decimal" value="' +
+            C.centavosParaCampo(it.precoUnitarioCentavos) + '" aria-label="Preço unitário"></label>' +
+        '</div>' +
+        '<p class="sub">Total impresso na nota: ' + moeda(it.totalCentavos) +
+          (it.conferir ? ' · <strong class="pendente">⚠ confira: a conta não fecha</strong>' : '') + '</p>' +
+        '<select class="campo" data-campo="destino" aria-label="Onde incluir este item">' + opcoes + '</select>' +
+        '<p class="erro" data-campo="erro" hidden></p>' +
+      '</div></div>';
+  }
+
+  async function revisarNota(r) {
+    if (!r.itens.length) {
+      const v = await abrirFolha(
+        '<h2 id="folhaTitulo">Nenhum item reconhecido</h2>' +
+        '<p class="sub">Não encontrei linhas de produtos nesta foto. Fotografe só a parte dos itens, de perto, com boa luz, ' +
+        'o papel esticado e sem sombra.</p>' + htmlTextoLido(r.texto) +
+        '<div class="botoes"><button class="btn primario" value="outra">📷 Tirar outra foto</button>' +
+        '<button class="btn texto" value="">Fechar</button></div>');
+      if (v === 'outra') $('fotoNotaCamera').click();
+      return;
+    }
+    const itensLista = estado.listaAtual.itens.slice().sort((a, b) => a.nomeProdutoSnapshot.localeCompare(b.nomeProdutoSnapshot, 'pt-BR'));
+    const sugestoes = window.CCNota.sugerirCorrespondencias(r.itens, estado.listaAtual.itens);
+    let confirmados = null;
+    const v = await abrirFolha(
+      '<h2 id="folhaTitulo">Itens lidos da nota (' + r.itens.length + ')</h2>' +
+      '<p class="sub">A leitura automática pode errar: confira nomes, quantidades e preços. Desmarque o que não quiser incluir.</p>' +
+      r.avisos.map(a => '<p class="aviso">' + esc(a) + '</p>').join('') +
+      '<div class="nota-itens">' + r.itens.map((it, i) => htmlItemDaNota(it, i, sugestoes[i], itensLista)).join('') + '</div>' +
+      htmlTextoLido(r.texto) +
+      '<div class="botoes">' +
+        '<button class="btn primario" value="ok" data-padrao>Preencher a lista</button>' +
+        '<button class="btn secundario" value="mais">Preencher e ler outra parte da nota</button>' +
+        '<button class="btn texto" value="">Cancelar</button>' +
+      '</div>',
+      {
+        validar: (valor, form) => {
+          if (valor !== 'ok' && valor !== 'mais') return true;
+          confirmados = [];
+          let erros = 0;
+          form.querySelectorAll('.nota-item').forEach(el => {
+            const campo = nome => el.querySelector('[data-campo="' + nome + '"]');
+            if (!campo('incluir').checked) { mostrarErro(campo('erro'), ''); return; }
+            const nome = C.validarNome(campo('nome').value);
+            const q = C.interpretarQuantidade(campo('quantidade').value);
+            const p = C.interpretarPreco(campo('preco').value);
+            const erro = !nome.ok ? nome.erro : !q.ok ? q.erro : !p.ok ? p.erro : p.centavos === null ? 'Informe o preço.' : '';
+            mostrarErro(campo('erro'), erro);
+            if (erro) { erros++; return; }
+            confirmados.push({ nome: nome.valor, quantidade: q.valor, precoCentavos: p.centavos,
+              unidade: r.itens[Number(el.dataset.i)].unidade, destino: campo('destino').value || null });
+          });
+          if (erros) { toast('Corrija os itens marcados em vermelho.'); return false; }
+          if (!confirmados.length) { toast('Nenhum item marcado para incluir.'); return false; }
+          return true;
+        }
+      });
+    if ((v !== 'ok' && v !== 'mais') || !confirmados) return;
+    const resultado = window.CCNota.aplicarNaLista(estado, confirmados);
+    salvar();
+    if (rotaAtual().tela !== 'lista') location.hash = '#lista';
+    definirFiltro('todos');
+    toast('Nota lida: ' + (resultado.preenchidos ? plural(resultado.preenchidos, 'item preenchido', 'itens preenchidos') : '') +
+      (resultado.preenchidos && resultado.adicionados ? ' e ' : '') +
+      (resultado.adicionados ? plural(resultado.adicionados, 'item adicionado', 'itens adicionados') : '') + '. Confira e finalize.');
+    if (v === 'mais') $('fotoNotaCamera').click();
+  }
+
+  $('btnLerNota').addEventListener('click', async () => {
+    const v = await abrirFolha(
+      '<h2 id="folhaTitulo">Ler nota fiscal</h2>' +
+      '<p class="sub">Os itens da nota entram na lista atual com a quantidade e o preço reais, já marcados como pegos. ' +
+      'Antes de incluir, você confere tudo.</p>' +
+      '<ul class="dicas">' +
+        '<li>Fotografe <strong>só a parte dos produtos</strong>, de perto, com o papel esticado.</li>' +
+        '<li>Boa luz, sem sombra e sem reflexo.</li>' +
+        '<li>Nota comprida: leia em partes, uma foto de cada vez.</li>' +
+      '</ul>' +
+      '<div class="botoes">' +
+        '<button class="btn primario" value="camera">📷 Tirar foto da nota</button>' +
+        '<button class="btn secundario" value="galeria">🖼️ Escolher foto da galeria</button>' +
+        '<button class="btn texto" value="">Cancelar</button>' +
+      '</div>');
+    if (v === 'camera') $('fotoNotaCamera').click();
+    else if (v === 'galeria') $('fotoNotaGaleria').click();
+  });
+
+  ['fotoNotaCamera', 'fotoNotaGaleria'].forEach(id => $(id).addEventListener('change', e => {
+    const arquivo = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (arquivo) lerFotoDaNota(arquivo);
+  }));
 
   /* ---------- Cópia na nuvem ---------- */
 
