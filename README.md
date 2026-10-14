@@ -2,7 +2,7 @@
 
 ## 📲 [Baixar o CompraCerta para Android (APK)](https://github.com/Gabrieldsss/CompraCerta/raw/main/download/CompraCerta.apk)
 
-Versão 3.2.0 · 8,8 MB · Android 7 ou mais novo
+Versão 3.3.0 · 10,4 MB · Android 7 ou mais novo · **atualiza sozinho** a partir desta versão
 
 **Como instalar:**
 
@@ -70,7 +70,22 @@ O APK sai em `dist/CompraCerta-<versão>-debug.apk`, com uma cópia em `download
 
 **Instalar no celular:** copie o APK para o aparelho (cabo USB, Google Drive, WhatsApp etc.), toque nele e permita "instalar apps desconhecidos" para o app usado na abertura. Para atualizar, instale a versão nova por cima: os dados são mantidos.
 
-**Nova versão:** aumente `version` no `package.json` (ex.: `3.1.0` → `3.1.1`) antes do `npm run apk`. O número interno do Android (`versionCode`) é calculado a partir dela, e o celular só aceita atualizar para um número maior.
+### Atualização automática (a partir da 3.3.0)
+
+O APK instalado procura atualizações em `https://gabrieldsss.github.io/CompraCerta/atualizacao.json`: ao abrir o app e, depois, no máximo a cada 6 horas.
+
+- **Mudou só o conteúdo** (telas, regras, leitura de nota, correções): o app baixa o pacote em segundo plano e confere o SHA-256. A versão nova entra em uso na próxima vez que o app for aberto. Ninguém precisa reinstalar nada.
+- **Mudou a parte nativa** (plugins, permissões, pasta `android/`): o app mostra o aviso **"Nova versão do app → Baixar agora"** para instalar o APK novo por cima.
+- **Proteção:** se uma versão baixada não abrir direito, o plugin volta sozinho para a anterior.
+- O plugin usado é o Capacitor Updater, open source e em modo próprio: ele não fala com servidores da empresa Capgo e não envia estatísticas.
+
+**Para publicar uma versão:**
+
+1. Aumente `version` no `package.json` (ex.: `3.3.0` → `3.3.1`).
+2. **Só se mudou algo nativo** (plugin novo, permissão, `android/`): aumente também `compracerta.apkMinimo` para o novo número do APK (`3.4.0` → `30400`), rode `npm run apk` e envie o `download/CompraCerta.apk` junto.
+3. Faça commit e push. O GitHub Actions publica o site (iPhone) e o pacote de atualização (Android).
+
+O número interno do Android (`versionCode`) é calculado a partir da versão (`3.3.0` → `30300`), e o celular só aceita atualizar para um número maior.
 
 > É um APK de **depuração**, assinado com uma chave de teste. Ele serve para instalar nos seus aparelhos e nos da família. Para publicar na Google Play, é preciso gerar um pacote **assinado** (AAB) com uma chave própria. Guarde essa chave com segurança e fora do projeto.
 

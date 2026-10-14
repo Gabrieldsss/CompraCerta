@@ -1216,12 +1216,83 @@
   });
   window.addEventListener('orientationchange', () => { alturaMaxima = 0; });
 
+  /* ---------- Atualização automática (APK) ---------- */
+
+  const ATUALIZACAO_BAIXADA = 'compracerta-atualizacao-baixada';
+  const AVISO_APK = 'compracerta-aviso-apk';
+  let ultimaVerificacao = 0;
+
+  /** "3.10.0" > "3.9.2" */
+  function compararVersoes(a, b) {
+    const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) {
+      if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+    }
+    return 0;
+  }
+
+  function lerLocal(chave) { try { return localStorage.getItem(chave); } catch (_) { return null; } }
+  function gravarLocal(chave, valor) { try { localStorage.setItem(chave, valor); } catch (_) { /* sem espaço */ } }
+
+  async function avisarApkNovo(novo, urlApk) {
+    const hoje = new Date().toISOString().slice(0, 10);
+    if (lerLocal(AVISO_APK) === novo.versao + '|' + hoje) return; // no máximo um aviso por dia
+    gravarLocal(AVISO_APK, novo.versao + '|' + hoje);
+    const v = await abrirFolha(
+      '<h2 id="folhaTitulo">Nova versão do app: ' + esc(novo.versao) + '</h2>' +
+      '<p class="sub">Esta atualização precisa ser instalada pelo APK. Seus dados continuam no aparelho.</p>' +
+      '<ol class="dicas"><li>Toque em <strong>Baixar agora</strong>.</li><li>Abra o arquivo baixado e toque em <strong>Instalar</strong> (por cima do app atual).</li></ol>' +
+      '<div class="botoes"><button class="btn primario" value="baixar">Baixar agora</button><button class="btn texto" value="">Depois</button></div>');
+    if (v === 'baixar') location.href = urlApk; // abre no navegador do celular, que faz o download
+  }
+
+  /** Procura uma versão nova no GitHub Pages. Se só o conteúdo mudou, baixa em segundo plano e aplica
+      na próxima abertura; se a parte nativa mudou, avisa para instalar o APK novo. */
+  async function verificarAtualizacao() {
+    const Atualizador = Cap && Cap.Plugins && Cap.Plugins.CapacitorUpdater;
+    const info = window.CC_VERSAO;
+    if (!nativo || !Atualizador || !info || !info.urlAtualizacao) return;
+    if (navigator.onLine === false || Date.now() - ultimaVerificacao < 6 * 3600 * 1000) return;
+    ultimaVerificacao = Date.now();
+    try {
+      const resposta = await fetch(info.urlAtualizacao + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!resposta.ok) return;
+      const novo = await resposta.json();
+      if (!novo || compararVersoes(novo.versao, info.app) <= 0) return; // já está na versão mais nova
+      const app = Cap.Plugins.App && Cap.Plugins.App.getInfo ? await Cap.Plugins.App.getInfo() : null;
+      const apkInstalado = app ? Number(app.build) : 0;
+      if (novo.apkMinimo && apkInstalado < novo.apkMinimo) {
+        avisarApkNovo(novo, novo.urlApk || info.urlApk);
+        return;
+      }
+      if (lerLocal(ATUALIZACAO_BAIXADA) === novo.versao) return; // já baixada, aguardando a próxima abertura
+      const baixado = await Atualizador.download({
+        url: new URL(novo.url, info.urlAtualizacao).href,
+        version: novo.versao,
+        checksum: novo.checksum
+      });
+      await Atualizador.next({ id: baixado.id });
+      gravarLocal(ATUALIZACAO_BAIXADA, novo.versao);
+      toast('Atualização ' + novo.versao + ' baixada. Ela entra em uso na próxima vez que você abrir o app.');
+    } catch (e) {
+      ultimaVerificacao = 0; // sem internet ou falha no download: tenta de novo na próxima vez
+    }
+  }
+
+  if (nativo && Cap.Plugins && Cap.Plugins.CapacitorUpdater) {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verificarAtualizacao(); });
+    setTimeout(verificarAtualizacao, 3000);
+  }
+
   /* ---------- Início ---------- */
 
   $('campoCategoria').innerHTML = C.CATEGORIAS.map(c => '<option>' + esc(c) + '</option>').join('');
   carregar();
   salvar();
   mostrarTela();
+  // O app abriu sem erros: confirma ao atualizador. Se uma atualização quebrar a abertura,
+  // esta linha não é alcançada e o plugin volta sozinho para a versão anterior.
+  if (nativo && Cap.Plugins && Cap.Plugins.CapacitorUpdater) Cap.Plugins.CapacitorUpdater.notifyAppReady().catch(() => {});
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   // No APK os arquivos já estão no aparelho; o service worker só é usado na versão web.
   if (!nativo && 'serviceWorker' in navigator && location.protocol !== 'file:') {

@@ -1,6 +1,6 @@
 /* CompraCerta — service worker: guarda os arquivos do app para funcionar sem internet.
    Ao mudar qualquer arquivo do app, aumente VERSAO para os celulares baixarem a nova versão. */
-const VERSAO = 'compracerta-v3.2.0';
+const VERSAO = 'compracerta-v3.3.0';
 // Os arquivos do leitor de notas (vendor/tesseract, ~9 MB) não entram aqui: ficam guardados
 // automaticamente na primeira vez em que a leitura é usada.
 const ARQUIVOS = [
@@ -9,6 +9,7 @@ const ARQUIVOS = [
   './css/app.css',
   './vendor/supabase.js',
   './js/config.js',
+  './js/versao.js',
   './js/core.js',
   './js/nota.js',
   './js/nuvem.js',

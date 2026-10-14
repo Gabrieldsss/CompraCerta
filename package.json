@@ -1,6 +1,11 @@
 {
   "name": "compracerta",
-  "version": "3.2.0",
+  "version": "3.3.0",
+  "compracerta": {
+    "apkMinimo": 30300,
+    "urlAtualizacao": "https://gabrieldsss.github.io/CompraCerta/atualizacao.json",
+    "urlApk": "https://github.com/Gabrieldsss/CompraCerta/raw/main/download/CompraCerta.apk"
+  },
   "private": true,
   "description": "Lista de compras de supermercado com preços reais, histórico, estimativas e cópia na nuvem (Supabase).",
   "scripts": {
@@ -13,6 +18,7 @@
     "@capacitor/android": "8.5.3",
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.5.3",
+    "@capgo/capacitor-updater": "8.52.1",
     "@supabase/supabase-js": "2.117.3",
     "@tesseract.js-data/por": "1.0.0",
     "tesseract.js": "7.0.0"

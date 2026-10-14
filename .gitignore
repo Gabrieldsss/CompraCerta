@@ -10,3 +10,5 @@ android/app/src/main/assets/public/
 *.jks
 .claude/settings.local.json
 www/js/config.js
+www/js/versao.js
+publicar/

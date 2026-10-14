@@ -25,6 +25,13 @@ for (const [origem, destino] of copias) {
   console.log('copiado: ' + destino);
 }
 
+// Versão do app e endereços de atualização (vêm do package.json).
+const pacote = require(path.join(raiz, 'package.json'));
+const cc = pacote.compracerta || {};
+fs.writeFileSync(path.join(raiz, 'www/js/versao.js'), '/* Gerado por scripts/build.js a partir do package.json. */\nwindow.CC_VERSAO = ' +
+  JSON.stringify({ app: pacote.version, apkMinimo: cc.apkMinimo, urlAtualizacao: cc.urlAtualizacao, urlApk: cc.urlApk }, null, 2) + ';\n');
+console.log('gerado: www/js/versao.js (versão ' + pacote.version + ')');
+
 // Idioma português do OCR, já descompactado: o build do Android remove a extensão ".gz" dos
 // arquivos (e descompacta), então o app usa o arquivo puro em todas as plataformas.
 const zlib = require('zlib');

@@ -1,5 +1,6 @@
-# Publica o CompraCerta como web app (PWA) no GitHub Pages a cada push na main.
-# É a versão usada no iPhone (Safari → Compartilhar → Adicionar à Tela de Início).
+# Publica o CompraCerta no GitHub Pages a cada push na main:
+#   - o web app (PWA), usado no iPhone (Safari → Compartilhar → Adicionar à Tela de Início);
+#   - o pacote de atualização automática que os APKs instalados baixam sozinhos.
 # Requisitos no repositório:
 #   - Settings → Pages → Source: "GitHub Actions"
 #   - Settings → Secrets and variables → Actions: SUPABASE_URL e SUPABASE_CHAVE (chave publicável)
@@ -50,11 +51,15 @@ jobs:
           fi
           node scripts/build.js
 
+      # Pacote que os APKs instalados baixam sozinhos (atualizacao.json + zip de www).
+      - name: Pacote de atualização automática do APK
+        run: node scripts/pacote-atualizacao.js publicar
+
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: www
+          path: publicar
 
       - id: publicacao
         uses: actions/deploy-pages@v5
